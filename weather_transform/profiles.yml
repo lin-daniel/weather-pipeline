@@ -1,14 +1,14 @@
 weather_transform:
+  target: dev
   outputs:
     dev:
-      dataset: weather_data
-      job_execution_timeout_seconds: 300
-      job_retries: 1
-      keyfile: C:\Users\danie\Downloads\weather-pipeline\service-account.json
-      location: US
-      method: service-account
-      priority: interactive
-      project: weather-pipeline-486804
-      threads: 1
       type: bigquery
-  target: dev
+      method: service-account
+      project: weather-pipeline-486804
+      dataset: weather_data
+      threads: 1
+      timeout_seconds: 300
+      location: US
+      priority: interactive
+      # THE MAGIC LINE: Read the environment variable instead of a hardcoded path
+      keyfile: "{{ env_var('GOOGLE_APPLICATION_CREDENTIALS') }}"
