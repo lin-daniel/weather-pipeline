@@ -1,0 +1,49 @@
+name: Daily Weather Pipeline
+
+# Trigger: Run every day at 8:00 AM UTC
+on:
+  schedule:
+    - cron: '0 8 * * *'
+  # Also allow manual trigger for testing
+  workflow_dispatch:
+
+jobs:
+  run_pipeline:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Check out the code
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      # 2. Authenticate with Google Cloud
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.GCP_SERVICE_ACCOUNT_JSON }}
+
+      # 3. Set up Python
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      # 4. Install Dependencies
+      - name: Install Libraries
+        run: |
+          pip install pandas google-cloud-bigquery requests db-dtypes dbt-bigquery
+
+      # 5. Run the Extraction (Python)
+      - name: Run Extract Script
+        env:
+          # We pass the secret key path to the script via env var
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.auth.outputs.credentials_file_path }}
+        run: python extract.py
+
+      # 6. Run the Transformation (dbt)
+      - name: Run dbt
+        # We need to tell dbt where the profiles.yml is (it's not in home dir on GitHub)
+        run: |
+          cd weather_transform
+          dbt deps
+          dbt run --profiles-dir .
